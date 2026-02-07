@@ -1,58 +1,53 @@
-import os
-import requests
+from PIL import Image, ImageDraw
 import random
 from pathlib import Path
 
-HF_TOKEN = os.getenv("HF_API_TOKEN")
-if not HF_TOKEN:
-    raise RuntimeError("HF_API_TOKEN is missing")
+# Canvas
+W, H = 1024, 1024
+img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+draw = ImageDraw.Draw(img)
 
-MODEL = "stabilityai/sdxl-turbo"
-API_URL = f"https://router.huggingface.co/hf-inference/models/{MODEL}"
-
-HEADERS = {
-    "Authorization": f"Bearer {HF_TOKEN}",
-    "Content-Type": "application/json",
-}
-
-objects = [
-    "star", "ball", "heart", "circle", "square",
-    "apple", "banana", "car", "cloud", "sun"
+# Random choices
+shapes = ["circle", "square", "star"]
+colors = [
+    (255, 99, 71),    # red
+    (255, 215, 0),    # yellow
+    (135, 206, 235),  # blue
+    (144, 238, 144),  # green
+    (221, 160, 221)   # purple
 ]
 
-prompt = (
-    f"flat cute cartoon {random.choice(objects)}, "
-    "simple rounded shape, solid color, "
-    "no face, no text, no outline, no shadow, "
-    "minimal vector illustration, plain background, for toddlers"
-)
+shape = random.choice(shapes)
+color = random.choice(colors)
 
-print("Prompt:", prompt)
+margin = 200
 
-payload = {
-    "inputs": prompt,
-    "parameters": {
-        "num_inference_steps": 4,
-        "guidance_scale": 0.0
-    }
-}
+if shape == "circle":
+    draw.ellipse(
+        [margin, margin, W - margin, H - margin],
+        fill=color
+    )
 
-response = requests.post(
-    API_URL,
-    headers=HEADERS,
-    json=payload,
-    timeout=60
-)
+elif shape == "square":
+    draw.rounded_rectangle(
+        [margin, margin, W - margin, H - margin],
+        radius=120,
+        fill=color
+    )
 
-print("Status:", response.status_code)
-
-if response.status_code != 200:
-    print("Response text:", response.text)
-    raise RuntimeError("Image generation failed")
+elif shape == "star":
+    cx, cy = W // 2, H // 2
+    r1, r2 = 300, 130
+    points = []
+    for i in range(10):
+        angle = i * 36
+        r = r1 if i % 2 == 0 else r2
+        x = cx + r * __import__("math").cos(__import__("math").radians(angle))
+        y = cy + r * __import__("math").sin(__import__("math").radians(angle))
+        points.append((x, y))
+    draw.polygon(points, fill=color)
 
 Path("assets").mkdir(exist_ok=True)
+img.save("assets/object.png")
 
-with open("assets/object.png", "wb") as f:
-    f.write(response.content)
-
-print("AI image generated successfully")
+print("Image generated successfully")
