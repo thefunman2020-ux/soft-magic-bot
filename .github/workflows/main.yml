@@ -28,3 +28,13 @@ jobs:
         env:
           HF_API_TOKEN: ${{ secrets.HF_API_TOKEN }}
         run: python generate_image.py
+      
+      - name: Generate video
+        run: bash generate_video.sh
+
+      - name: Upload video artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-video
+          path: output/short.mp4
+
