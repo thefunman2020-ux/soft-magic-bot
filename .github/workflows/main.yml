@@ -28,7 +28,12 @@ jobs:
         env:
           HF_API_TOKEN: ${{ secrets.HF_API_TOKEN }}
         run: python generate_image.py
-      
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          
       - name: Generate video
         run: bash generate_video.sh
 
