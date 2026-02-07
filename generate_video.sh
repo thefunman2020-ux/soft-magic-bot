@@ -4,8 +4,8 @@ set -e
 mkdir -p output
 
 # Strong visible motion (kids need BIG movement)
-FLOAT_AMPLITUDE=120
-FLOAT_PERIOD=3
+FLOAT_AMPLITUDE=160
+FLOAT_PERIOD=1.8
 
 # Background (soft, clean)
 BG_COLOR="#FFFDF8"
