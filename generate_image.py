@@ -1,9 +1,15 @@
+import os
 import requests
 import random
+import time
 from pathlib import Path
 
-API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1"
-HEADERS = {"Authorization": f"Bearer {__import__('os').environ['HF_API_TOKEN']}"}
+HF_TOKEN = os.getenv("HF_API_TOKEN")
+if not HF_TOKEN:
+    raise RuntimeError("HF_API_TOKEN is missing")
+
+API_URL = "https://api-inference.huggingface.co/models/CompVis/stable-diffusion-v1-4"
+HEADERS = {"Authorization": f"Bearer {HF_TOKEN}"}
 
 objects = [
     "star", "ball", "heart", "circle", "square",
@@ -11,17 +17,35 @@ objects = [
 ]
 
 prompt = (
-    f"Flat cute cartoon {random.choice(objects)}, "
+    f"flat cute cartoon {random.choice(objects)}, "
     "simple rounded shape, solid color, "
     "no face, no text, no outline, no shadow, "
-    "minimal vector style, for toddlers, plain background"
+    "minimal vector style, plain background, for toddlers"
 )
 
-response = requests.post(
-    API_URL,
-    headers=HEADERS,
-    json={"inputs": prompt}
-)
+print("Prompt:", prompt)
+
+def generate():
+    r = requests.post(
+        API_URL,
+        headers=HEADERS,
+        json={"inputs": prompt},
+        timeout=90
+    )
+    print("Status:", r.status_code)
+    return r
+
+response = generate()
+
+# Retry once if model is loading
+if response.status_code == 503:
+    print("Model loading, retrying...")
+    time.sleep(20)
+    response = generate()
+
+if response.status_code != 200:
+    print("Response text:", response.text)
+    raise RuntimeError("Image generation failed")
 
 Path("assets").mkdir(exist_ok=True)
 
