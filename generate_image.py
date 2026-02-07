@@ -8,8 +8,13 @@ HF_TOKEN = os.getenv("HF_API_TOKEN")
 if not HF_TOKEN:
     raise RuntimeError("HF_API_TOKEN is missing")
 
-API_URL = "https://api-inference.huggingface.co/models/CompVis/stable-diffusion-v1-4"
-HEADERS = {"Authorization": f"Bearer {HF_TOKEN}"}
+MODEL = "CompVis/stable-diffusion-v1-4"
+API_URL = f"https://router.huggingface.co/hf-inference/models/{MODEL}"
+
+HEADERS = {
+    "Authorization": f"Bearer {HF_TOKEN}",
+    "Content-Type": "application/json",
+}
 
 objects = [
     "star", "ball", "heart", "circle", "square",
@@ -26,22 +31,22 @@ prompt = (
 print("Prompt:", prompt)
 
 def generate():
-    r = requests.post(
+    return requests.post(
         API_URL,
         headers=HEADERS,
         json={"inputs": prompt},
         timeout=90
     )
-    print("Status:", r.status_code)
-    return r
 
 response = generate()
+print("Status:", response.status_code)
 
-# Retry once if model is loading
+# Retry if model is loading
 if response.status_code == 503:
     print("Model loading, retrying...")
     time.sleep(20)
     response = generate()
+    print("Retry status:", response.status_code)
 
 if response.status_code != 200:
     print("Response text:", response.text)
