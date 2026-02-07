@@ -3,34 +3,41 @@ set -e
 
 mkdir -p output
 
-# Randomized parameters (safe ranges)
-FLOAT_PERIOD=$(awk -v min=90 -v max=150 'BEGIN{srand(); print int(min+rand()*(max-min))}')
-FLOAT_AMPLITUDE=$(awk -v min=15 -v max=40 'BEGIN{srand(); print int(min+rand()*(max-min))}')
-SCALE_FACTOR=$(awk -v min=0.9 -v max=1.1 'BEGIN{srand(); print min+rand()*(max-min)}')
-FADE_TIME=$(awk -v min=0.8 -v max=1.4 'BEGIN{srand(); print min+rand()*(max-min)}')
+# Strong, visible parameters
+FLOAT_AMPLITUDE=120          # very visible movement
+FLOAT_PERIOD=3               # slow enough for kids
+POP_TIME=0.6
+HOLD_TIME=2
+FADE_TIME=0.8
 
-# Random pastel background
-BG_COLORS=("white" "#FFF4E6" "#E6F7FF" "#F3E6FF" "#E6FFF2")
-BG_COLOR=${BG_COLORS[$RANDOM % ${#BG_COLORS[@]}]}
+# Two contrasting colors for magic effect
+COLORS=("#FF5252" "#4FC3F7" "#81C784" "#FFD54F" "#BA68C8")
+COLOR1=${COLORS[$RANDOM % ${#COLORS[@]}]}
+COLOR2=${COLORS[$RANDOM % ${#COLORS[@]}]}
+
+# Soft background
+BG="#FFFDF8"
 
 ffmpeg -y \
+  -f lavfi -i "color=${BG}:1080x1920:duration=8" \
   -loop 1 -i assets/object.png \
   -filter_complex "
-    scale=iw*${SCALE_FACTOR}:-1,
-    format=rgba,
-    fade=t=in:st=0:d=${FADE_TIME}:alpha=1,
-    fade=t=out:st=7:d=${FADE_TIME}:alpha=1,
-    pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=${BG_COLOR},
-    zoompan=
-      z='1.0':
-      x='iw/2-(iw/2)':
-      y='ih/2-(ih/2)+${FLOAT_AMPLITUDE}*sin(2*PI*on/${FLOAT_PERIOD})':
-      d=1:
-      s=1080x1920
+    [1:v]scale=700:-1,format=rgba,
+         colorchannelmixer=rr=1:gg=1:bb=1,
+         scale=iw*if(lt(t,${POP_TIME}),t/${POP_TIME},1):
+               ih*if(lt(t,${POP_TIME}),t/${POP_TIME},1),
+         fade=t=in:st=0:d=${POP_TIME}:alpha=1,
+         fade=t=out:st=7:d=${FADE_TIME}:alpha=1
+         [obj];
+
+    [0:v][obj]overlay=
+         x=(W-w)/2:
+         y=(H-h)/2
+           +${FLOAT_AMPLITUDE}*sin(2*PI*(t-${POP_TIME})/${FLOAT_PERIOD})
   " \
   -t 8 \
-  -pix_fmt yuv420p \
   -r 25 \
+  -pix_fmt yuv420p \
   output/short.mp4
 
-echo "Video generated successfully"
+echo "Kid-friendly magic video generated"
