@@ -17,5 +17,8 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Test workflow
-        run: echo "Soft Magic Bot is alive"
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Generate AI image
+        run: python generate_image.py
